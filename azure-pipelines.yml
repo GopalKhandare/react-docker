@@ -11,7 +11,7 @@ resources:
 variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '7ed8e297-4abd-40a5-90ce-538a1de47ea4'
-  imageRepository: 'gopalkhandarereactdocker'
+  imageRepository: 'samples/reactapp'
   containerRegistry: 'reactappregistry123.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
