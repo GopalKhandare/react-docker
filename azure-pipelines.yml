@@ -43,6 +43,7 @@ stages:
       inputs:
         azureSubscription: 'reactapp'
         scriptType: 'bash'
-        inlineScript : |
+        scriptLocation: inlineScript
+        inlineScript: |
           az container instance update --resource-group reactapp --name reactapp1234 --container-name reactapp1234 --image reactappregistry123.azurecr.io/samples/reactapp:latest
 
