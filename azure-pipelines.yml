@@ -41,7 +41,7 @@ stages:
     - task: AzureCLI@2
       displayName: 'Update existing container instance'
       inputs:
-        azureSubscription: '<your_azure_subscription>'
+        azureSubscription: 'reactapp'
         scriptType: 'bash'
         inlineScript : |
           az container instance update --resource-group reactapp --name reactapp1234 --container-name reactapp1234 --image reactappregistry123.azurecr.io/samples/reactapp:latest
