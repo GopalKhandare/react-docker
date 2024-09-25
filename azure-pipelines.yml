@@ -1,49 +1,39 @@
-# Docker
-# Build and push an image to Azure Container Registry
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
 trigger:
-- master
+  branches:
+    include:
+      - master  # or your default branch
 
-resources:
-- repo: self
+pool:
+  vmImage: 'ubuntu-latest'
 
 variables:
-  # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '7ed8e297-4abd-40a5-90ce-538a1de47ea4'
-  imageRepository: 'samples/reactapp'
-  containerRegistry: 'reactappregistry123.azurecr.io'
-  dockerfilePath: 'Dockerfile'
-  tag: 'latest'
+  imageName: 'samples/reactapp'  # Name of your Docker image
+  acrName: 'reactapp123'      # Azure Container Registry name
+  azureSubscription: 'reactapp'  # Service connection in Azure Pipelines
+  webAppName: 'reactweb'  # Azure Web App name
+  resourceGroup: 'reactapp1234'  # Resource group name
 
-  # Agent VM image name
-  vmImageName: 'ubuntu-latest'
+steps:
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: $(azureSubscription)
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        # Login to ACR
+        az acr login --name $(acrName)
 
-stages:
-- stage: Build
-  displayName: Build and push stage
-  jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: Docker@2
-      displayName: Build and push an image to container registry
-      inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
+        # Build the Docker image
+        docker build -t $(acrName).azurecr.io/$(imageName):latest .
 
-    - task: AzureCLI@2
-      displayName: 'Update existing container instance'
-      inputs:
-        azureSubscription: 'reactapp'
-        scriptType: 'bash'
-        scriptLocation: inlineScript
-        inlineScript: |
-          az container restart --resource-group reactapp --name reactapp1234
+        # Push the Docker image to ACR
+        docker push $(acrName).azurecr.io/$(imageName):latest
 
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: $(azureSubscription)
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        # Restart the Azure Web App to pull the latest image
+        az webapp restart --name $(webAppName) --resource-group $(resourceGroup)
