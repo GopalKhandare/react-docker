@@ -1,39 +1,46 @@
 trigger:
   branches:
     include:
-      - master  # or your default branch
+      - main  # Trigger the pipeline on updates to the 'main' branch
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-latest'  # Use Ubuntu for running the pipeline
 
-variables:
-  imageName: 'samples/reactapp'  # Name of your Docker image
-  acrName: 'reactapp123'      # Azure Container Registry name
-  azureSubscription: 'reactapp'  # Service connection in Azure Pipelines
-  webAppName: 'reactweb'  # Azure Web App name
-  resourceGroup: 'reactapp1234'  # Resource group name
+jobs:  # All steps go under jobs, not stages
+  - job: BuildAndDeploy
+    pool:
+      vmImage: 'ubuntu-latest'
 
-steps:
-  - task: AzureCLI@2
-    inputs:
-      azureSubscription: $(azureSubscription)
-      scriptType: 'bash'
-      scriptLocation: 'inlineScript'
-      inlineScript: |
-        # Login to ACR
-        az acr login --name $(acrName)
+    steps:
+      - checkout: self  # Checkout the code from the repository
 
-        # Build the Docker image
-        docker build -t $(acrName).azurecr.io/$(imageName):latest .
+      # Build Docker image and push to Azure Container Registry (ACR)
+      - task: Docker@2
+        inputs:
+          containerRegistry: 'reactappregistry123'  # ACR Service connection
+          repository: 'samples/reactapp'  # Define the repository in ACR
+          command: 'buildAndPush'  # Build and push the Docker image
+          Dockerfile: '**/Dockerfile'  # Path to the Dockerfile in your repository
+          tags: 'latest'  # Tag the image with the build ID for versioning
 
-        # Push the Docker image to ACR
-        docker push $(acrName).azurecr.io/$(imageName):latest
+      # Optionally run tests here, if needed
 
-  - task: AzureCLI@2
-    inputs:
-      azureSubscription: $(azureSubscription)
-      scriptType: 'bash'
-      scriptLocation: 'inlineScript'
-      inlineScript: |
-        # Restart the Azure Web App to pull the latest image
-        az webapp restart --name $(webAppName) --resource-group $(resourceGroup)
+      # Use Azure CLI to deploy the container to Azure Container Instances (ACI)
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: 'reactapp1234'  # Use your Azure subscription connection
+          scriptType: 'bash'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            # Create or update the container instance using the latest image from ACR
+            az container create --resource-group react1234  --name reactapp \
+            --image reactapp345.azurecr.io/samples/reactapp:latest \  # Pull the image from ACR
+            --registry-login-server reactapp345.azurecr.io \  # ACR login server
+            --registry-username $(ACR_USERNAME) \  # ACR username from DevOps service connection
+            --registry-password $(ACR_PASSWORD) \  # ACR password from DevOps service connection
+            --dns-name-label reactcontainerapp \  # DNS name label for public access
+            --ports 80  # Expose port 80 for HTTP access
+
+            # This is the URL to access the containerized React app
+            # The URL will be: http://reactcontainerapp.<region>.azurecontainer.io
+            # Replace <region> with the region of your deployment (e.g., centralus, eastus)
