@@ -47,7 +47,7 @@ stages:
           # Use Azure CLI to deploy the container to Azure Container Instances (ACI)
           - task: AzureCLI@2
             inputs:
-              azureSubscription: 'YourAzureSubscription'  # Use your Azure subscription connection
+              azureSubscription: 'reactapp1234'  # Use your Azure subscription connection
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
