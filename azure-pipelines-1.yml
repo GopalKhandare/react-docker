@@ -1,0 +1,61 @@
+# Docker
+# Build and push an image to Azure Container Registry
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- master
+
+resources:
+- repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: 'ce6f818b-fc95-4778-b8b5-595584039a10'
+  imageRepository: 'samples/reactapp'
+  containerRegistry: 'reactapp345.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: 'latest'
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+- stage: Deploy
+  jobs:
+    - job: DeployToACI
+      pool:
+          vmImage: 'ubuntu-latest'
+
+      steps:
+          # Use Azure CLI to deploy the container to Azure Container Instances (ACI)
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'YourAzureSubscription'  # Use your Azure subscription connection
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Create or update the container instance using the latest image from ACR
+                az container create --resource-group react1234  --name reactapp \
+                --image reactapp345.azurecr.io/samples/reactapp:latest \  # Pull the image from ACR
+                --registry-login-server reactapp345.azurecr.io \  # ACR login server
+                --registry-username $(ACR_USERNAME) \  # ACR username from DevOps service connection
+                --registry-password $(ACR_PASSWORD) \  # ACR password from DevOps service connection
+                --dns-name-label reactcontainerapp \  # DNS name label for public access
+                --ports 80  # Expose port 80 for HTTP access
