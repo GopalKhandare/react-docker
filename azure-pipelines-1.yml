@@ -52,4 +52,5 @@ stages:
               scriptLocation: 'inlineScript'
               inlineScript: |
                 # Create or update the container instance using the latest image from ACR
+                az acr login --name reactapp345
                 az container create -g react1234 --name reactapp --image reactapp345.azurecr.io/samples/reactapp:latest --registry-username reactapp345 --registry-password $(ACR_PASSWORD) --ports 80 443 --dns-name-label contoso
